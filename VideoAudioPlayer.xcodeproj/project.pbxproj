@@ -1,0 +1,245 @@
+// !$*UTF8*$!
+{
+    archiveVersion = 1;
+    classes = {
+    };
+    objectVersion = 60;
+    objects = {
+
+/* Begin PBXBuildFile section */
+        B10000000000000000000001 /* VideoAudioPlayerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* VideoAudioPlayerApp.swift */; };
+        B10000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* ContentView.swift */; };
+        B10000000000000000000003 /* ImportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* ImportViewModel.swift */; };
+        B10000000000000000000004 /* ImportedVideoFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* ImportedVideoFile.swift */; };
+        B10000000000000000000005 /* AudioTrackAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* AudioTrackAnalyzer.swift */; };
+        B10000000000000000000006 /* AudioTrackInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* AudioTrackInfo.swift */; };
+        B10000000000000000000007 /* VideoSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* VideoSource.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+        A10000000000000000000001 /* VideoAudioPlayerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoAudioPlayerApp.swift; sourceTree = "<group>"; };
+        A10000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+        A10000000000000000000003 /* ImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportViewModel.swift; sourceTree = "<group>"; };
+        A10000000000000000000004 /* ImportedVideoFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedVideoFile.swift; sourceTree = "<group>"; };
+        A10000000000000000000005 /* AudioTrackAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackAnalyzer.swift; sourceTree = "<group>"; };
+        A10000000000000000000006 /* AudioTrackInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioTrackInfo.swift; sourceTree = "<group>"; };
+        A10000000000000000000007 /* VideoSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSource.swift; sourceTree = "<group>"; };
+        A10000000000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+        A10000000000000000000009 /* VideoAudioPlayer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VideoAudioPlayer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+        D10000000000000000000001 /* Frameworks */ = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+        C10000000000000000000001 = {
+            isa = PBXGroup;
+            children = (
+                C10000000000000000000002 /* VideoAudioPlayer */,
+                C10000000000000000000003 /* Products */,
+            );
+            sourceTree = "<group>";
+        };
+        C10000000000000000000002 /* VideoAudioPlayer */ = {
+            isa = PBXGroup;
+            children = (
+                A10000000000000000000001 /* VideoAudioPlayerApp.swift */,
+                A10000000000000000000002 /* ContentView.swift */,
+                A10000000000000000000003 /* ImportViewModel.swift */,
+                A10000000000000000000004 /* ImportedVideoFile.swift */,
+                A10000000000000000000005 /* AudioTrackAnalyzer.swift */,
+                A10000000000000000000006 /* AudioTrackInfo.swift */,
+                A10000000000000000000007 /* VideoSource.swift */,
+                A10000000000000000000008 /* Info.plist */,
+            );
+            path = VideoAudioPlayer;
+            sourceTree = "<group>";
+        };
+        C10000000000000000000003 /* Products */ = {
+            isa = PBXGroup;
+            children = (
+                A10000000000000000000009 /* VideoAudioPlayer.app */,
+            );
+            name = Products;
+            sourceTree = "<group>";
+        };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+        E10000000000000000000001 /* VideoAudioPlayer */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = F10000000000000000000002 /* Build configuration list for PBXNativeTarget "VideoAudioPlayer" */;
+            buildPhases = (
+                D10000000000000000000002 /* Sources */,
+                D10000000000000000000001 /* Frameworks */,
+                D10000000000000000000003 /* Resources */,
+            );
+            buildRules = (
+            );
+            dependencies = (
+            );
+            name = VideoAudioPlayer;
+            productName = VideoAudioPlayer;
+            productReference = A10000000000000000000009 /* VideoAudioPlayer.app */;
+            productType = "com.apple.product-type.application";
+        };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+        E10000000000000000000002 /* Project object */ = {
+            isa = PBXProject;
+            attributes = {
+                BuildIndependentTargetsInParallel = 1;
+                LastSwiftUpdateCheck = 1600;
+                LastUpgradeCheck = 1600;
+                TargetAttributes = {
+                    E10000000000000000000001 = {
+                        CreatedOnToolsVersion = 16.0;
+                    };
+                };
+            };
+            buildConfigurationList = F10000000000000000000001 /* Build configuration list for PBXProject "VideoAudioPlayer" */;
+            compatibilityVersion = "Xcode 15.0";
+            developmentRegion = en;
+            hasScannedForEncodings = 0;
+            knownRegions = (
+                en,
+                Base,
+            );
+            mainGroup = C10000000000000000000001;
+            productRefGroup = C10000000000000000000003 /* Products */;
+            projectDirPath = "";
+            projectRoot = "";
+            targets = (
+                E10000000000000000000001 /* VideoAudioPlayer */,
+            );
+        };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+        D10000000000000000000003 /* Resources */ = {
+            isa = PBXResourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+        D10000000000000000000002 /* Sources */ = {
+            isa = PBXSourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                B10000000000000000000001 /* VideoAudioPlayerApp.swift in Sources */,
+                B10000000000000000000002 /* ContentView.swift in Sources */,
+                B10000000000000000000003 /* ImportViewModel.swift in Sources */,
+                B10000000000000000000004 /* ImportedVideoFile.swift in Sources */,
+                B10000000000000000000005 /* AudioTrackAnalyzer.swift in Sources */,
+                B10000000000000000000006 /* AudioTrackInfo.swift in Sources */,
+                B10000000000000000000007 /* VideoSource.swift in Sources */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+        F10000000000000000000011 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ENABLE_MODULES = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                DEBUG_INFORMATION_FORMAT = dwarf;
+                ENABLE_TESTABILITY = YES;
+                GCC_C_LANGUAGE_STANDARD = gnu17;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                ONLY_ACTIVE_ARCH = YES;
+                SDKROOT = iphoneos;
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+                SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+            };
+            name = Debug;
+        };
+        F10000000000000000000012 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ENABLE_MODULES = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+                GCC_C_LANGUAGE_STANDARD = gnu17;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                SDKROOT = iphoneos;
+                SWIFT_COMPILATION_MODE = wholemodule;
+                SWIFT_OPTIMIZATION_LEVEL = "-O";
+                VALIDATE_PRODUCT = YES;
+            };
+            name = Release;
+        };
+        F10000000000000000000021 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 1;
+                GENERATE_INFOPLIST_FILE = NO;
+                INFOPLIST_FILE = VideoAudioPlayer/Info.plist;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                MARKETING_VERSION = 0.1.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.inari1234.videoaudioplayer;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = 1;
+            };
+            name = Debug;
+        };
+        F10000000000000000000022 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                CODE_SIGN_STYLE = Automatic;
+                CURRENT_PROJECT_VERSION = 1;
+                GENERATE_INFOPLIST_FILE = NO;
+                INFOPLIST_FILE = VideoAudioPlayer/Info.plist;
+                IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+                MARKETING_VERSION = 0.1.0;
+                PRODUCT_BUNDLE_IDENTIFIER = com.inari1234.videoaudioplayer;
+                PRODUCT_NAME = "$(TARGET_NAME)";
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_VERSION = 5.0;
+                TARGETED_DEVICE_FAMILY = 1;
+            };
+            name = Release;
+        };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+        F10000000000000000000001 /* Build configuration list for PBXProject "VideoAudioPlayer" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                F10000000000000000000011 /* Debug */,
+                F10000000000000000000012 /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+        F10000000000000000000002 /* Build configuration list for PBXNativeTarget "VideoAudioPlayer" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                F10000000000000000000021 /* Debug */,
+                F10000000000000000000022 /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+/* End XCConfigurationList section */
+    };
+    rootObject = E10000000000000000000002 /* Project object */;
+}
