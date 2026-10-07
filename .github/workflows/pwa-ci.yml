@@ -1,8 +1,8 @@
-name: PWA Feasibility CI
+name: PWA Library CI
 
 on:
   push:
-    branches: [candidate/pwa-feasibility]
+    branches: [candidate/pwa-library-v1]
     paths:
       - 'pwa/**'
       - '.github/workflows/pwa-ci.yml'
@@ -35,6 +35,12 @@ jobs:
 
       - name: Type check
         run: npm run check
+
+      - name: IndexedDB library CRUD regression
+        run: npm run smoke:library
+
+      - name: Service Worker syntax check
+        run: node --check public/sw.js
 
       - name: Build PWA
         run: npm run build
@@ -73,13 +79,13 @@ jobs:
       - name: Upload PWA dist
         uses: actions/upload-artifact@v4
         with:
-          name: video-audio-pwa-dist
+          name: video-audio-pwa-library-dist
           path: pwa/dist
           if-no-files-found: error
           retention-days: 14
 
       - name: Publish validated build to gh-pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/pwa-feasibility'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/pwa-library-v1'
         run: |
           cd "$GITHUB_WORKSPACE"
           rm -rf /tmp/video-audio-pages
@@ -94,5 +100,5 @@ jobs:
           git clean -fdx
           cp -R /tmp/video-audio-pages/. .
           git add -A
-          git commit -m "Deploy PWA candidate ${GITHUB_SHA}"
+          git commit -m "Deploy PWA library candidate ${GITHUB_SHA}"
           git push --force origin gh-pages
