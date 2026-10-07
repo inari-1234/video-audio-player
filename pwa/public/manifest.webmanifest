@@ -1,0 +1,17 @@
+{
+  "name": "Video Audio",
+  "short_name": "Video Audio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#111827",
+  "description": "iPhone内の動画から音声を無変換優先で抽出して再生するPWA",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

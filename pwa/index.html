@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Video Audio" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Video Audio PWA</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">PWA FEASIBILITY</p>
+        <h1>動画から音源を抽出</h1>
+        <p class="lead">端末内で処理します。無変換でコピーできる音声だけを抽出します。</p>
+      </header>
+
+      <section class="card">
+        <label class="picker">
+          <span>動画を選択</span>
+          <input id="video-input" type="file" accept="video/*,.mov,.mp4" />
+        </label>
+        <p id="file-name" class="muted">未選択</p>
+      </section>
+
+      <section id="analysis-card" class="card hidden">
+        <div class="section-title">
+          <h2>音声情報</h2>
+          <span id="analysis-status" class="badge">解析中</span>
+        </div>
+        <dl class="meta-grid">
+          <div><dt>Codec</dt><dd id="codec">—</dd></div>
+          <div><dt>Sample Rate</dt><dd id="sample-rate">—</dd></div>
+          <div><dt>Channels</dt><dd id="channels">—</dd></div>
+          <div><dt>Bitrate</dt><dd id="bitrate">—</dd></div>
+          <div><dt>Duration</dt><dd id="duration">—</dd></div>
+        </dl>
+        <button id="extract-button" type="button" disabled>無変換で音声を抽出</button>
+        <progress id="progress" max="1" value="0" class="hidden"></progress>
+        <p id="message" class="muted"></p>
+      </section>
+
+      <section id="player-card" class="card hidden">
+        <div class="section-title">
+          <h2>抽出結果</h2>
+          <span class="badge success">再圧縮なし</span>
+        </div>
+        <audio id="player" controls preload="metadata"></audio>
+        <a id="download-link" class="download" download>音源を保存</a>
+        <p class="muted">再生中にホーム画面へ戻る／画面をロックし、バックグラウンド再生も確認できます。</p>
+      </section>
+
+      <section class="card compact">
+        <h2>このGateで確認すること</h2>
+        <p>①動画を読める ②音声情報を取れる ③AAC等を再エンコードせずM4Aへコピーできる ④抽出音源を再生できる ⑤バックグラウンド再生できる</p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

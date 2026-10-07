@@ -1,0 +1,20 @@
+{
+  "name": "video-audio-player-pwa",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "check": "tsc --noEmit",
+    "build": "vite build",
+    "smoke:copy": "tsx scripts/lossless-copy-smoke.ts"
+  },
+  "dependencies": {
+    "mediabunny": "1.61.3"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.7"
+  }
+}
