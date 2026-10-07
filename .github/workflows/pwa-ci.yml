@@ -11,6 +11,9 @@ on:
       - 'pwa/**'
       - '.github/workflows/pwa-ci.yml'
 
+permissions:
+  contents: write
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -74,3 +77,21 @@ jobs:
           path: pwa/dist
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish validated build to gh-pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/pwa-feasibility'
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          rm -rf /tmp/video-audio-pages
+          mkdir -p /tmp/video-audio-pages
+          cp -R pwa/dist/. /tmp/video-audio-pages/
+          touch /tmp/video-audio-pages/.nojekyll
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan gh-pages
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -R /tmp/video-audio-pages/. .
+          git add -A
+          git commit -m "Deploy PWA candidate ${GITHUB_SHA}"
+          git push --force origin gh-pages
