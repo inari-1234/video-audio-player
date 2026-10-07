@@ -3,15 +3,18 @@ import Foundation
 @main
 struct AudioAnalysisSmokeTest {
     static func main() async throws {
-        guard CommandLine.arguments.count == 2 else {
-            fputs("Usage: test_audio_analysis /path/to/fixture.mov\n", stderr)
+        guard CommandLine.arguments.count == 3 else {
+            fputs("Usage: test_audio_analysis /path/to/stereo-aac.mov /path/to/no-audio.mov\n", stderr)
             exit(2)
         }
 
-        let url = URL(fileURLWithPath: CommandLine.arguments[1])
-        let source = try await AudioTrackAnalyzer().analyze(
-            url: url,
-            displayName: url.lastPathComponent
+        let analyzer = AudioTrackAnalyzer()
+        let positiveURL = URL(fileURLWithPath: CommandLine.arguments[1])
+        let noAudioURL = URL(fileURLWithPath: CommandLine.arguments[2])
+
+        let source = try await analyzer.analyze(
+            url: positiveURL,
+            displayName: positiveURL.lastPathComponent
         )
 
         guard source.audioTracks.count == 1 else {
@@ -25,8 +28,8 @@ struct AudioAnalysisSmokeTest {
         guard abs(track.sampleRate - 48_000) < 1 else {
             fatalError("Expected 48 kHz, got \(track.sampleRate)")
         }
-        guard track.channelCount == 1 else {
-            fatalError("Expected mono fixture, got \(track.channelCount) channels")
+        guard track.channelCount == 2 else {
+            fatalError("Expected stereo fixture, got \(track.channelCount) channels")
         }
         guard track.estimatedBitrate > 0 else {
             fatalError("Expected positive bitrate, got \(track.estimatedBitrate)")
@@ -35,7 +38,19 @@ struct AudioAnalysisSmokeTest {
             fatalError("Unexpected duration: \(source.duration)")
         }
 
-        print("Audio analysis smoke test: PASS")
+        print("Stereo AAC analysis: PASS")
         print("codec=\(track.codec) sampleRate=\(track.sampleRate) channels=\(track.channelCount) bitrate=\(track.estimatedBitrate) duration=\(source.duration)")
+
+        do {
+            _ = try await analyzer.analyze(
+                url: noAudioURL,
+                displayName: noAudioURL.lastPathComponent
+            )
+            fatalError("Expected noAudioTrack error for video without audio")
+        } catch AudioAnalysisError.noAudioTrack {
+            print("No-audio controlled rejection: PASS")
+        } catch {
+            fatalError("Expected noAudioTrack, got: \(error)")
+        }
     }
 }
