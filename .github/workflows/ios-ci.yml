@@ -31,13 +31,20 @@ jobs:
             brew install ffmpeg
           fi
 
-          FIXTURE="$RUNNER_TEMP/audio-analysis-fixture.mov"
+          STEREO_FIXTURE="$RUNNER_TEMP/stereo-aac-fixture.mov"
+          NO_AUDIO_FIXTURE="$RUNNER_TEMP/no-audio-fixture.mov"
+
           ffmpeg -hide_banner -loglevel error \
             -f lavfi -i color=c=black:s=320x240:r=30:d=2 \
             -f lavfi -i sine=frequency=1000:sample_rate=48000:duration=2 \
             -c:v mpeg4 -q:v 5 \
-            -c:a aac -b:a 192k \
-            -shortest "$FIXTURE"
+            -c:a aac -b:a 192k -ac 2 \
+            -shortest "$STEREO_FIXTURE"
+
+          ffmpeg -hide_banner -loglevel error \
+            -f lavfi -i color=c=black:s=320x240:r=30:d=1 \
+            -c:v mpeg4 -q:v 5 -an \
+            "$NO_AUDIO_FIXTURE"
 
           swiftc -parse-as-library \
             VideoAudioPlayer/AudioTrackInfo.swift \
@@ -49,7 +56,7 @@ jobs:
             -framework CoreMedia \
             -o /tmp/audio-analysis-tests
 
-          /tmp/audio-analysis-tests "$FIXTURE"
+          /tmp/audio-analysis-tests "$STEREO_FIXTURE" "$NO_AUDIO_FIXTURE"
 
       - name: Build iOS Simulator
         run: |
@@ -61,6 +68,7 @@ jobs:
             -configuration Debug \
             -sdk iphonesimulator \
             SYMROOT="$PWD/build-simulator" \
+            CURRENT_PROJECT_VERSION=2 \
             CODE_SIGNING_ALLOWED=NO \
             build | tee xcodebuild-simulator.log
 
@@ -74,6 +82,7 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             SYMROOT="$PWD/build-device" \
+            CURRENT_PROJECT_VERSION=2 \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY='' \
@@ -90,33 +99,33 @@ jobs:
         run: |
           bash scripts/package_unsigned_ipa.sh \
             "$PWD/build-device/Release-iphoneos/VideoAudioPlayer.app" \
-            VideoAudioPlayer-v0.1.0-build1-sideload.ipa
+            VideoAudioPlayer-v0.1.0-build2-sideload.ipa
 
       - name: Verify IPA
         run: |
           rm -rf verify-ipa
           mkdir verify-ipa
           cd verify-ipa
-          unzip -q ../VideoAudioPlayer-v0.1.0-build1-sideload.ipa
+          unzip -q ../VideoAudioPlayer-v0.1.0-build2-sideload.ipa
           APP=Payload/VideoAudioPlayer.app
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = "com.inari1234.videoaudioplayer"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = "0.1.0"
-          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = "1"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = "2"
           file "$APP/VideoAudioPlayer" | grep -q arm64
           echo "IPA verification: PASS"
 
       - name: Upload sideload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: VideoAudioPlayer-v0.1.0-build1-sideload-ipa
-          path: VideoAudioPlayer-v0.1.0-build1-sideload.ipa
+          name: VideoAudioPlayer-v0.1.0-build2-sideload-ipa
+          path: VideoAudioPlayer-v0.1.0-build2-sideload.ipa
           retention-days: 14
 
       - name: Upload Xcode logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: VideoAudioPlayer-v0.1.0-build1-xcode-logs
+          name: VideoAudioPlayer-v0.1.0-build2-xcode-logs
           path: |
             xcodebuild-simulator.log
             xcodebuild-device.log
