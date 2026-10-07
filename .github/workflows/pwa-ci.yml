@@ -66,3 +66,11 @@ jobs:
           echo "output=$(cat /tmp/output.sha)"
           diff -u /tmp/input.sha /tmp/output.sha
           echo "Encoded packet identity: PASS"
+
+      - name: Upload PWA dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-audio-pwa-dist
+          path: pwa/dist
+          if-no-files-found: error
+          retention-days: 14
