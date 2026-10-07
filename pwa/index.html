@@ -8,14 +8,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Video Audio" />
     <link rel="manifest" href="./manifest.webmanifest" />
-    <title>Video Audio PWA</title>
+    <title>Video Audio</title>
   </head>
   <body>
     <main class="shell">
       <header>
-        <p class="eyebrow">PWA FEASIBILITY</p>
-        <h1>動画から音源を抽出</h1>
-        <p class="lead">端末内で処理します。無変換でコピーできる音声だけを抽出します。</p>
+        <p class="eyebrow">LOCAL AUDIO LIBRARY</p>
+        <h1>動画から音源を保存</h1>
+        <p class="lead">端末内で処理し、無変換で抽出できた音源をこのPWA内に保存します。</p>
       </header>
 
       <section class="card">
@@ -38,24 +38,28 @@
           <div><dt>Bitrate</dt><dd id="bitrate">—</dd></div>
           <div><dt>Duration</dt><dd id="duration">—</dd></div>
         </dl>
-        <button id="extract-button" type="button" disabled>無変換で音声を抽出</button>
+        <button id="extract-button" type="button" disabled>無変換で抽出して保存</button>
         <progress id="progress" max="1" value="0" class="hidden"></progress>
         <p id="message" class="muted"></p>
       </section>
 
       <section id="player-card" class="card hidden">
         <div class="section-title">
-          <h2>抽出結果</h2>
+          <h2 id="player-title">再生中</h2>
           <span class="badge success">再圧縮なし</span>
         </div>
         <audio id="player" controls preload="metadata"></audio>
-        <a id="download-link" class="download" download>音源を保存</a>
-        <p class="muted">再生中にホーム画面へ戻る／画面をロックし、バックグラウンド再生も確認できます。</p>
+        <a id="download-link" class="download" download>M4Aをファイルへ保存</a>
       </section>
 
-      <section class="card compact">
-        <h2>このGateで確認すること</h2>
-        <p>①動画を読める ②音声情報を取れる ③AAC等を再エンコードせずM4Aへコピーできる ④抽出音源を再生できる ⑤バックグラウンド再生できる</p>
+      <section class="card">
+        <div class="section-title">
+          <h2>音源ライブラリ</h2>
+          <span id="library-count" class="badge">0件</span>
+        </div>
+        <p id="storage-status" class="muted compact-text">保存領域を確認中…</p>
+        <div id="library-empty" class="empty-state">保存した音源はまだありません。</div>
+        <div id="library-list" class="library-list"></div>
       </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
