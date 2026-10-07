@@ -3,19 +3,122 @@ name: iOS CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: video-audio-player-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: macos-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Build for iOS Simulator
+
+      - name: Show environment
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Static Swift parse
+        run: swiftc -frontend -parse VideoAudioPlayer/*.swift
+
+      - name: Audio analysis runtime smoke test
+        run: |
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            brew install ffmpeg
+          fi
+
+          FIXTURE="$RUNNER_TEMP/audio-analysis-fixture.mov"
+          ffmpeg -hide_banner -loglevel error \
+            -f lavfi -i color=c=black:s=320x240:r=30:d=2 \
+            -f lavfi -i sine=frequency=1000:sample_rate=48000:duration=2 \
+            -c:v mpeg4 -q:v 5 \
+            -c:a aac -b:a 192k \
+            -shortest "$FIXTURE"
+
+          swiftc -parse-as-library \
+            VideoAudioPlayer/AudioTrackInfo.swift \
+            VideoAudioPlayer/VideoSource.swift \
+            VideoAudioPlayer/AudioTrackAnalyzer.swift \
+            scripts/test_audio_analysis.swift \
+            -framework AVFoundation \
+            -framework AudioToolbox \
+            -framework CoreMedia \
+            -o /tmp/audio-analysis-tests
+
+          /tmp/audio-analysis-tests "$FIXTURE"
+
+      - name: Build iOS Simulator
         run: |
           set -o pipefail
+          rm -rf "$PWD/build-simulator"
           xcodebuild \
             -project VideoAudioPlayer.xcodeproj \
             -target VideoAudioPlayer \
             -configuration Debug \
             -sdk iphonesimulator \
+            SYMROOT="$PWD/build-simulator" \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build | tee xcodebuild-simulator.log
+
+      - name: Build unsigned iPhone app
+        run: |
+          set -o pipefail
+          rm -rf "$PWD/build-device"
+          xcodebuild \
+            -project VideoAudioPlayer.xcodeproj \
+            -target VideoAudioPlayer \
+            -configuration Release \
+            -sdk iphoneos \
+            SYMROOT="$PWD/build-device" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            build | tee xcodebuild-device.log
+
+      - name: Inspect compiler warnings
+        run: |
+          echo "Simulator warnings:"
+          grep -n 'warning:' xcodebuild-simulator.log || true
+          echo "Device warnings:"
+          grep -n 'warning:' xcodebuild-device.log || true
+
+      - name: Package sideload IPA
+        run: |
+          bash scripts/package_unsigned_ipa.sh \
+            "$PWD/build-device/Release-iphoneos/VideoAudioPlayer.app" \
+            VideoAudioPlayer-v0.1.0-build1-sideload.ipa
+
+      - name: Verify IPA
+        run: |
+          rm -rf verify-ipa
+          mkdir verify-ipa
+          cd verify-ipa
+          unzip -q ../VideoAudioPlayer-v0.1.0-build1-sideload.ipa
+          APP=Payload/VideoAudioPlayer.app
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")" = "com.inari1234.videoaudioplayer"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")" = "0.1.0"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$APP/Info.plist")" = "1"
+          file "$APP/VideoAudioPlayer" | grep -q arm64
+          echo "IPA verification: PASS"
+
+      - name: Upload sideload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoAudioPlayer-v0.1.0-build1-sideload-ipa
+          path: VideoAudioPlayer-v0.1.0-build1-sideload.ipa
+          retention-days: 14
+
+      - name: Upload Xcode logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoAudioPlayer-v0.1.0-build1-xcode-logs
+          path: |
+            xcodebuild-simulator.log
+            xcodebuild-device.log
+          if-no-files-found: ignore
+          retention-days: 14
