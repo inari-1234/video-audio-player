@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Video Audio" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <title>Video Audio</title>
+    <script type="module" crossorigin src="./assets/index-I7kNaRLx.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DNQj4JOJ.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <p class="eyebrow">LOCAL AUDIO LIBRARY</p>
+        <h1>動画から音源を保存</h1>
+        <p class="lead">端末内で処理し、無変換で抽出できた音源をこのPWA内に保存します。</p>
+      </header>
+
+      <section class="card">
+        <label class="picker">
+          <span>動画を選択</span>
+          <input id="video-input" type="file" accept="video/*,.mov,.mp4" />
+        </label>
+        <p id="file-name" class="muted">未選択</p>
+      </section>
+
+      <section id="analysis-card" class="card hidden">
+        <div class="section-title">
+          <h2>音声情報</h2>
+          <span id="analysis-status" class="badge">解析中</span>
+        </div>
+        <dl class="meta-grid">
+          <div><dt>Codec</dt><dd id="codec">—</dd></div>
+          <div><dt>Sample Rate</dt><dd id="sample-rate">—</dd></div>
+          <div><dt>Channels</dt><dd id="channels">—</dd></div>
+          <div><dt>Bitrate</dt><dd id="bitrate">—</dd></div>
+          <div><dt>Duration</dt><dd id="duration">—</dd></div>
+        </dl>
+        <button id="extract-button" type="button" disabled>無変換で抽出して保存</button>
+        <progress id="progress" max="1" value="0" class="hidden"></progress>
+        <p id="message" class="muted"></p>
+      </section>
+
+      <section id="player-card" class="card hidden">
+        <div class="section-title">
+          <h2 id="player-title">再生中</h2>
+          <span class="badge success">再圧縮なし</span>
+        </div>
+        <audio id="player" controls preload="metadata"></audio>
+        <a id="download-link" class="download" download>M4Aをファイルへ保存</a>
+      </section>
+
+      <section id="correction-f0-card" class="card">
+        <div class="section-title">
+          <h2>音量補正 技術検証 F0</h2>
+          <span id="correction-status" class="badge">未実行</span>
+        </div>
+        <p class="muted compact-text">現在の原音から一時プレビューを生成します。原音・ライブラリは変更しません。初回のみ約31MBの単一スレッドFFmpeg coreを読み込みます。</p>
+        <div class="correction-controls">
+          <label>検証長
+            <select id="correction-duration">
+              <option value="30" selected>30秒</option>
+              <option value="60">60秒</option>
+            </select>
+          </label>
+          <button id="correction-button" type="button" disabled>自然補正を検証</button>
+        </div>
+        <p id="correction-message" class="muted compact-text">先に音源を抽出するか、ライブラリから再生してください。</p>
+        <div id="correction-result" class="hidden">
+          <audio id="corrected-player" controls preload="metadata"></audio>
+          <dl class="meta-grid correction-grid">
+            <div><dt>Input LUFS</dt><dd id="correction-input-lufs">—</dd></div>
+            <div><dt>Output LUFS</dt><dd id="correction-output-lufs">—</dd></div>
+            <div><dt>Output True Peak</dt><dd id="correction-output-tp">—</dd></div>
+            <div><dt>2-pass type</dt><dd id="correction-type">—</dd></div>
+            <div><dt>Total</dt><dd id="correction-total">—</dd></div>
+            <div><dt>Encode</dt><dd id="correction-encode">—</dd></div>
+          </dl>
+          <p class="muted compact-text">このF0では補正版を保存しません。原音と補正版を聴き比べ、速度・安定性・音質だけを確認します。</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>音源ライブラリ</h2>
+          <span id="library-count" class="badge">0件</span>
+        </div>
+        <p id="storage-status" class="muted compact-text">保存領域を確認中…</p>
+        <div id="library-empty" class="empty-state">保存した音源はまだありません。</div>
+        <div id="library-list" class="library-list"></div>
+      </section>
+    </main>
+  </body>
+</html>
