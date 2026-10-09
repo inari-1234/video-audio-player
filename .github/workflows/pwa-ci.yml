@@ -1,8 +1,8 @@
-name: PWA Library CI
+name: PWA Audio Correction F0 CI
 
 on:
   push:
-    branches: [candidate/pwa-library-v1]
+    branches: [candidate/pwa-library-v1, candidate/audio-correction-f0]
     paths:
       - 'pwa/**'
       - '.github/workflows/pwa-ci.yml'
@@ -39,17 +39,42 @@ jobs:
       - name: IndexedDB library CRUD regression
         run: npm run smoke:library
 
+      - name: Audio correction parser/filter regression
+        run: npm run smoke:correction
+
       - name: Service Worker syntax check
         run: node --check public/sw.js
 
       - name: Build PWA
         run: npm run build
 
-      - name: Create H.264 + AAC stereo MOV fixture
+      - name: Install FFmpeg test dependency
         run: |
           if ! command -v ffmpeg >/dev/null 2>&1; then
             sudo apt-get update && sudo apt-get install -y ffmpeg
           fi
+
+      - name: Verify required audio correction filters
+        run: |
+          ffmpeg -hide_banner -filters > /tmp/filters.txt
+          for filter in dynaudnorm acompressor loudnorm aresample alimiter; do
+            grep -Eq "[[:space:]]${filter}[[:space:]]" /tmp/filters.txt
+          done
+          echo "Required correction filters: PASS"
+
+      - name: Verify correction chain syntax with AAC output
+        run: |
+          ffmpeg -hide_banner -loglevel error \
+            -f lavfi -i sine=frequency=700:sample_rate=48000:duration=6 \
+            -af "dynaudnorm=f=1000:g=31:p=0.95:m=2.0:t=0.02:n=1,acompressor=threshold=0.125:ratio=1.5:attack=20:release=250:makeup=1,loudnorm=I=-16:LRA=11:TP=-1.5,aresample=48000,alimiter=limit=0.841395:attack=5:release=50:level=0" \
+            -c:a aac -b:a 256k -ar 48000 -ac 2 /tmp/correction-chain.m4a
+          test "$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of csv=p=0 /tmp/correction-chain.m4a)" = "aac"
+          test "$(ffprobe -v error -select_streams a:0 -show_entries stream=sample_rate -of csv=p=0 /tmp/correction-chain.m4a)" = "48000"
+          test "$(ffprobe -v error -select_streams a:0 -show_entries stream=channels -of csv=p=0 /tmp/correction-chain.m4a)" = "2"
+          echo "Correction filter chain + AAC output: PASS"
+
+      - name: Create H.264 + AAC stereo MOV fixture
+        run: |
           ffmpeg -hide_banner -loglevel error \
             -f lavfi -i color=c=black:s=320x240:r=30:d=3 \
             -f lavfi -i sine=frequency=1000:sample_rate=48000:duration=3 \
@@ -79,13 +104,13 @@ jobs:
       - name: Upload PWA dist
         uses: actions/upload-artifact@v4
         with:
-          name: video-audio-pwa-library-dist
+          name: video-audio-pwa-correction-f0-dist
           path: pwa/dist
           if-no-files-found: error
           retention-days: 14
 
       - name: Publish validated build to gh-pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/pwa-library-v1'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/audio-correction-f0'
         run: |
           cd "$GITHUB_WORKSPACE"
           rm -rf /tmp/video-audio-pages
@@ -100,5 +125,5 @@ jobs:
           git clean -fdx
           cp -R /tmp/video-audio-pages/. .
           git add -A
-          git commit -m "Deploy PWA library candidate ${GITHUB_SHA}"
+          git commit -m "Deploy audio correction F0 ${GITHUB_SHA}"
           git push --force origin gh-pages
