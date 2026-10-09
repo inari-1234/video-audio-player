@@ -1,4 +1,5 @@
 import './style.css';
+import { runCorrectionF0 } from './correction';
 import { extractAudioWithoutReencode, inspectAudio, type AudioInfo } from './media';
 import {
   deleteLibraryTrack,
@@ -33,11 +34,27 @@ const libraryCount = byId<HTMLElement>('library-count');
 const libraryEmpty = byId<HTMLElement>('library-empty');
 const libraryList = byId<HTMLElement>('library-list');
 const storageStatus = byId<HTMLElement>('storage-status');
+const correctionStatus = byId<HTMLElement>('correction-status');
+const correctionDuration = byId<HTMLSelectElement>('correction-duration');
+const correctionButton = byId<HTMLButtonElement>('correction-button');
+const correctionMessage = byId<HTMLElement>('correction-message');
+const correctionResult = byId<HTMLElement>('correction-result');
+const correctedPlayer = byId<HTMLAudioElement>('corrected-player');
+const correctionInputLufs = byId<HTMLElement>('correction-input-lufs');
+const correctionOutputLufs = byId<HTMLElement>('correction-output-lufs');
+const correctionOutputTp = byId<HTMLElement>('correction-output-tp');
+const correctionType = byId<HTMLElement>('correction-type');
+const correctionTotal = byId<HTMLElement>('correction-total');
+const correctionEncode = byId<HTMLElement>('correction-encode');
 
 let selectedFile: File | null = null;
 let selectedInfo: AudioInfo | null = null;
 let outputUrl: string | null = null;
 let currentTrackId: string | null = null;
+let correctionSourceBlob: Blob | null = null;
+let correctionSourceSampleRate = 0;
+let correctionSourceChannels = 0;
+let correctedUrl: string | null = null;
 
 function formatDuration(seconds: number) {
   const total = Math.max(0, Math.round(seconds));
@@ -52,6 +69,10 @@ function formatBytes(bytes: number | null) {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+function formatSecondsFromMs(ms: number) {
+  return `${(ms / 1000).toFixed(1)}秒`;
 }
 
 function setMessage(text: string, isError = false) {
@@ -99,7 +120,36 @@ function configureMediaSession(title: string) {
   }
 }
 
-function setPlayerSource(blob: Blob, title: string, trackId: string | null) {
+function resetCorrectionPreview() {
+  correctedPlayer.pause();
+  correctedPlayer.removeAttribute('src');
+  correctedPlayer.load();
+  if (correctedUrl) URL.revokeObjectURL(correctedUrl);
+  correctedUrl = null;
+  correctionResult.classList.add('hidden');
+  correctionStatus.textContent = correctionSourceBlob ? '準備完了' : '未実行';
+  correctionStatus.classList.remove('success', 'warning');
+  correctionMessage.textContent = correctionSourceBlob
+    ? '30秒から開始してください。補正結果は保存されません。'
+    : '先に音源を抽出するか、ライブラリから再生してください。';
+  correctionMessage.classList.remove('error');
+}
+
+function setCorrectionSource(blob: Blob | null, sampleRateValue = 0, channelCount = 0) {
+  correctionSourceBlob = blob;
+  correctionSourceSampleRate = sampleRateValue;
+  correctionSourceChannels = channelCount;
+  correctionButton.disabled = !blob || !sampleRateValue || !channelCount;
+  resetCorrectionPreview();
+}
+
+function setPlayerSource(
+  blob: Blob,
+  title: string,
+  trackId: string | null,
+  sampleRateValue: number,
+  channelCount: number,
+) {
   player.pause();
   if (outputUrl) URL.revokeObjectURL(outputUrl);
   outputUrl = URL.createObjectURL(blob);
@@ -110,6 +160,7 @@ function setPlayerSource(blob: Blob, title: string, trackId: string | null) {
   downloadLink.download = safeFileName(title);
   configureMediaSession(title);
   playerCard.classList.remove('hidden');
+  setCorrectionSource(blob, sampleRateValue, channelCount);
 }
 
 async function refreshStorageStatus() {
@@ -136,7 +187,7 @@ function makeButton(label: string, className: string, onClick: () => void | Prom
 
 async function playLibraryTrack(track: LibraryTrackMeta) {
   const blob = await getLibraryAudio(track.id);
-  setPlayerSource(blob, track.title, track.id);
+  setPlayerSource(blob, track.title, track.id, track.sampleRate, track.channels);
   try {
     await player.play();
   } catch {
@@ -167,6 +218,7 @@ async function removeTrack(track: LibraryTrackMeta) {
     outputUrl = null;
     currentTrackId = null;
     playerCard.classList.add('hidden');
+    setCorrectionSource(null);
   }
   await Promise.all([renderLibrary(), refreshStorageStatus()]);
 }
@@ -282,7 +334,7 @@ extractButton.addEventListener('click', async () => {
       extractionMode: 'passthrough',
     };
 
-    setPlayerSource(audioBlob, stem, id);
+    setPlayerSource(audioBlob, stem, id, sourceInfo.sampleRate, sourceInfo.channels);
 
     try {
       await saveLibraryTrack(track, audioBlob);
@@ -302,7 +354,60 @@ extractButton.addEventListener('click', async () => {
   }
 });
 
+correctionButton.addEventListener('click', async () => {
+  if (!correctionSourceBlob || !correctionSourceSampleRate || !correctionSourceChannels) return;
+
+  correctionButton.disabled = true;
+  correctionStatus.textContent = '処理中';
+  correctionStatus.classList.remove('success', 'warning');
+  correctionMessage.classList.remove('error');
+  correctionMessage.textContent = 'FFmpeg core読込 → 原音測定 → 前段処理後測定 → 2-pass補正 → AAC再測定を実行しています…';
+  correctionResult.classList.add('hidden');
+
+  try {
+    const previewSeconds = Number(correctionDuration.value) || 30;
+    const result = await runCorrectionF0(correctionSourceBlob, {
+      sampleRate: correctionSourceSampleRate,
+      channels: correctionSourceChannels,
+      previewSeconds,
+    });
+
+    if (correctedUrl) URL.revokeObjectURL(correctedUrl);
+    correctedUrl = URL.createObjectURL(result.output);
+    correctedPlayer.src = correctedUrl;
+
+    correctionInputLufs.textContent = `${result.input.inputI.toFixed(1)} LUFS`;
+    correctionOutputLufs.textContent = `${result.outputMeasure.inputI.toFixed(1)} LUFS`;
+    correctionOutputTp.textContent = `${result.outputMeasure.inputTP.toFixed(2)} dBTP`;
+    correctionType.textContent = result.normalizationType;
+    correctionTotal.textContent = `${formatSecondsFromMs(result.timings.totalMs)} · ${(result.timings.totalMs / 1000 / result.previewSeconds).toFixed(1)}×実時間`;
+    correctionEncode.textContent = formatSecondsFromMs(result.timings.encodeMs);
+    correctionResult.classList.remove('hidden');
+
+    const coreNote = result.timings.engineLoadMs > 0
+      ? `core読込 ${formatSecondsFromMs(result.timings.engineLoadMs)} · `
+      : 'core再利用 · ';
+    if (result.gatePass) {
+      correctionStatus.textContent = '処理PASS';
+      correctionStatus.classList.add('success');
+      correctionMessage.textContent = `${coreNote}必要フィルター5種PASS · AAC ${Math.round(result.bitrate / 1000)}kbps · TP検証PASS`;
+    } else {
+      correctionStatus.textContent = 'TP要調整';
+      correctionStatus.classList.add('warning');
+      correctionMessage.textContent = `${coreNote}処理は完了しましたが、AAC再測定True Peakが目標−1.5 dBTPを超えました。正式版では目標を下げて原音から再生成します。`;
+    }
+  } catch (error) {
+    correctionStatus.textContent = '失敗';
+    correctionStatus.classList.add('warning');
+    correctionMessage.textContent = error instanceof Error ? error.message : '音量補正F0に失敗しました。';
+    correctionMessage.classList.add('error');
+  } finally {
+    correctionButton.disabled = !correctionSourceBlob;
+  }
+});
+
 async function initialize() {
+  setCorrectionSource(null);
   await Promise.all([renderLibrary(), refreshStorageStatus()]);
 }
 
