@@ -1,16 +1,19 @@
 {
   "name": "video-audio-player-pwa",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0-f0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "check": "tsc --noEmit",
     "build": "vite build",
     "smoke:copy": "tsx scripts/lossless-copy-smoke.ts",
-    "smoke:library": "tsx scripts/library-smoke.ts"
+    "smoke:library": "tsx scripts/library-smoke.ts",
+    "smoke:correction": "tsx scripts/correction-smoke.ts"
   },
   "dependencies": {
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "@ffmpeg/util": "0.12.2",
     "mediabunny": "1.61.3"
   },
   "devDependencies": {
