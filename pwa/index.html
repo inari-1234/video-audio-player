@@ -52,6 +52,36 @@
         <a id="download-link" class="download" download>M4Aをファイルへ保存</a>
       </section>
 
+      <section id="correction-f0-card" class="card">
+        <div class="section-title">
+          <h2>音量補正 技術検証 F0</h2>
+          <span id="correction-status" class="badge">未実行</span>
+        </div>
+        <p class="muted compact-text">現在の原音から一時プレビューを生成します。原音・ライブラリは変更しません。初回のみ約31MBの単一スレッドFFmpeg coreを読み込みます。</p>
+        <div class="correction-controls">
+          <label>検証長
+            <select id="correction-duration">
+              <option value="30" selected>30秒</option>
+              <option value="60">60秒</option>
+            </select>
+          </label>
+          <button id="correction-button" type="button" disabled>自然補正を検証</button>
+        </div>
+        <p id="correction-message" class="muted compact-text">先に音源を抽出するか、ライブラリから再生してください。</p>
+        <div id="correction-result" class="hidden">
+          <audio id="corrected-player" controls preload="metadata"></audio>
+          <dl class="meta-grid correction-grid">
+            <div><dt>Input LUFS</dt><dd id="correction-input-lufs">—</dd></div>
+            <div><dt>Output LUFS</dt><dd id="correction-output-lufs">—</dd></div>
+            <div><dt>Output True Peak</dt><dd id="correction-output-tp">—</dd></div>
+            <div><dt>2-pass type</dt><dd id="correction-type">—</dd></div>
+            <div><dt>Total</dt><dd id="correction-total">—</dd></div>
+            <div><dt>Encode</dt><dd id="correction-encode">—</dd></div>
+          </dl>
+          <p class="muted compact-text">このF0では補正版を保存しません。原音と補正版を聴き比べ、速度・安定性・音質だけを確認します。</p>
+        </div>
+      </section>
+
       <section class="card">
         <div class="section-title">
           <h2>音源ライブラリ</h2>
