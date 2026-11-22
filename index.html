@@ -9,8 +9,8 @@
     <meta name="apple-mobile-web-app-title" content="Video Audio" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>Video Audio</title>
-    <script type="module" crossorigin src="./assets/index-I7kNaRLx.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DNQj4JOJ.css">
+    <script type="module" crossorigin src="./assets/index-CdndRPRB.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-COrZK6pI.css">
   </head>
   <body>
     <main class="shell">
@@ -59,15 +59,21 @@
           <h2>音量補正 技術検証 F0</h2>
           <span id="correction-status" class="badge">未実行</span>
         </div>
-        <p class="muted compact-text">現在の原音から一時プレビューを生成します。原音・ライブラリは変更しません。初回のみ約31MBの単一スレッドFFmpeg coreを読み込みます。</p>
+        <p class="muted compact-text">パレードなどの長時間の音量差を検証できます（最長30分）。原音・ライブラリは変更しません。初回のみ約31MBのFFmpeg coreを読み込みます。現在のF0は入力音源80MB以下・一括メモリ処理です。長尺はiPhoneで失敗する可能性があり、中断できます。</p>
         <div class="correction-controls">
           <label>検証長
             <select id="correction-duration">
               <option value="30" selected>30秒</option>
               <option value="60">60秒</option>
+              <option value="180">3分</option>
+              <option value="300">5分</option>
+              <option value="600">10分</option>
+              <option value="1200">20分</option>
+              <option value="1800">30分（上限）</option>
             </select>
           </label>
           <button id="correction-button" type="button" disabled>自然補正を検証</button>
+          <button id="correction-cancel" type="button" class="secondary hidden">中断</button>
         </div>
         <p id="correction-message" class="muted compact-text">先に音源を抽出するか、ライブラリから再生してください。</p>
         <div id="correction-result" class="hidden">
