@@ -44,7 +44,8 @@ audio { width: 100%; }
 button.mini { min-height: 38px; padding: 0 12px; border-radius: 10px; font-size: 12px; flex: 1; }
 button.secondary { background: #eef2f7; color: #374151; }
 button.danger { background: #fef2f2; color: #b91c1c; }
-.correction-controls { display: grid; grid-template-columns: 120px 1fr; gap: 10px; align-items: end; margin: 12px 0; }
+.correction-controls { display: grid; grid-template-columns: 120px 1fr auto; gap: 10px; align-items: end; margin: 12px 0; }
+#correction-cancel { padding: 0 14px; background: #eef2f7; color: #374151; }
 .correction-controls label { display: grid; gap: 6px; color: #6b7280; font-size: 11px; font-weight: 700; }
 .correction-controls select { min-height: 50px; border: 1px solid #d1d5db; border-radius: 12px; padding: 0 12px; background: #fff; color: #111827; }
 #correction-button { width: 100%; }

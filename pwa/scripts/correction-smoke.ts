@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { buildMeasuredLoudnormFilter, dbToLinear, parseLastLoudnormMeasurement } from '../src/loudness';
+import { MAX_CORRECTION_PREVIEW_SECONDS, CORRECTION_PREVIEW_CHOICES, resolveCorrectionDuration } from '../src/correction-options';
 
 const log = `
 [Parsed_loudnorm_0 @ 0x1] {
@@ -30,4 +31,13 @@ assert.ok(Math.abs(dbToLinear(-1.5) - 0.841395) < 0.00001);
 
 assert.throws(() => parseLastLoudnormMeasurement('no json here'), /測定JSON/);
 
-console.log('Audio correction parser/filter smoke test: PASS');
+assert.equal(MAX_CORRECTION_PREVIEW_SECONDS, 1800);
+assert.equal(CORRECTION_PREVIEW_CHOICES.at(-1), 1800);
+assert.equal(resolveCorrectionDuration(30), 30);
+assert.equal(resolveCorrectionDuration(1800), 1800);
+assert.equal(resolveCorrectionDuration(1800, 1200), 1200);
+assert.equal(resolveCorrectionDuration(1800, 3600), 1800);
+for (const invalid of [0, -1, 1801, Infinity, NaN, 60.5]) {
+  assert.throws(() => resolveCorrectionDuration(invalid), /上限は30分/);
+}
+console.log('Audio correction parser/filter/duration smoke test: PASS');

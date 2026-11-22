@@ -2,7 +2,7 @@ name: PWA Audio Correction F0 CI
 
 on:
   push:
-    branches: [candidate/pwa-library-v1, candidate/audio-correction-f0]
+    branches: [candidate/pwa-library-v1, candidate/audio-correction-f0, candidate/audio-correction-f0-30min]
     paths:
       - 'pwa/**'
       - '.github/workflows/pwa-ci.yml'
@@ -110,7 +110,7 @@ jobs:
           retention-days: 14
 
       - name: Publish validated build to gh-pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/audio-correction-f0'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/candidate/audio-correction-f0-30min'
         run: |
           cd "$GITHUB_WORKSPACE"
           rm -rf /tmp/video-audio-pages
@@ -120,10 +120,11 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan gh-pages
+          git fetch origin gh-pages:refs/remotes/origin/gh-pages
+          git checkout -B gh-pages origin/gh-pages
           git rm -rf --ignore-unmatch . >/dev/null 2>&1 || true
           git clean -fdx
           cp -R /tmp/video-audio-pages/. .
           git add -A
           git commit -m "Deploy audio correction F0 ${GITHUB_SHA}"
-          git push --force origin gh-pages
+          git push origin gh-pages

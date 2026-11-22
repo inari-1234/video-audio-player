@@ -1,5 +1,6 @@
 import './style.css';
-import { runCorrectionF0 } from './correction';
+import { cancelCorrectionF0, runCorrectionF0 } from './correction';
+import { resolveCorrectionDuration } from './correction-options';
 import { extractAudioWithoutReencode, inspectAudio, type AudioInfo } from './media';
 import {
   deleteLibraryTrack,
@@ -37,6 +38,7 @@ const storageStatus = byId<HTMLElement>('storage-status');
 const correctionStatus = byId<HTMLElement>('correction-status');
 const correctionDuration = byId<HTMLSelectElement>('correction-duration');
 const correctionButton = byId<HTMLButtonElement>('correction-button');
+const correctionCancelButton = byId<HTMLButtonElement>('correction-cancel');
 const correctionMessage = byId<HTMLElement>('correction-message');
 const correctionResult = byId<HTMLElement>('correction-result');
 const correctedPlayer = byId<HTMLAudioElement>('corrected-player');
@@ -54,6 +56,8 @@ let currentTrackId: string | null = null;
 let correctionSourceBlob: Blob | null = null;
 let correctionSourceSampleRate = 0;
 let correctionSourceChannels = 0;
+let correctionSourceDuration = 0;
+let correctionIsRunning = false;
 let correctedUrl: string | null = null;
 
 function formatDuration(seconds: number) {
@@ -130,15 +134,17 @@ function resetCorrectionPreview() {
   correctionStatus.textContent = correctionSourceBlob ? '準備完了' : '未実行';
   correctionStatus.classList.remove('success', 'warning');
   correctionMessage.textContent = correctionSourceBlob
-    ? '30秒から開始してください。補正結果は保存されません。'
+    ? '上限30分です。まず30秒で検証し、問題なければ長くしてください。補正版は保存されません。'
     : '先に音源を抽出するか、ライブラリから再生してください。';
   correctionMessage.classList.remove('error');
 }
 
-function setCorrectionSource(blob: Blob | null, sampleRateValue = 0, channelCount = 0) {
+function setCorrectionSource(blob: Blob | null, sampleRateValue = 0, channelCount = 0, sourceDuration = 0) {
+  if (correctionIsRunning) cancelCorrectionF0();
   correctionSourceBlob = blob;
   correctionSourceSampleRate = sampleRateValue;
   correctionSourceChannels = channelCount;
+  correctionSourceDuration = sourceDuration;
   correctionButton.disabled = !blob || !sampleRateValue || !channelCount;
   resetCorrectionPreview();
 }
@@ -149,6 +155,7 @@ function setPlayerSource(
   trackId: string | null,
   sampleRateValue: number,
   channelCount: number,
+  sourceDuration: number,
 ) {
   player.pause();
   if (outputUrl) URL.revokeObjectURL(outputUrl);
@@ -160,7 +167,7 @@ function setPlayerSource(
   downloadLink.download = safeFileName(title);
   configureMediaSession(title);
   playerCard.classList.remove('hidden');
-  setCorrectionSource(blob, sampleRateValue, channelCount);
+  setCorrectionSource(blob, sampleRateValue, channelCount, sourceDuration);
 }
 
 async function refreshStorageStatus() {
@@ -187,7 +194,7 @@ function makeButton(label: string, className: string, onClick: () => void | Prom
 
 async function playLibraryTrack(track: LibraryTrackMeta) {
   const blob = await getLibraryAudio(track.id);
-  setPlayerSource(blob, track.title, track.id, track.sampleRate, track.channels);
+  setPlayerSource(blob, track.title, track.id, track.sampleRate, track.channels, track.duration);
   try {
     await player.play();
   } catch {
@@ -334,7 +341,7 @@ extractButton.addEventListener('click', async () => {
       extractionMode: 'passthrough',
     };
 
-    setPlayerSource(audioBlob, stem, id, sourceInfo.sampleRate, sourceInfo.channels);
+    setPlayerSource(audioBlob, stem, id, sourceInfo.sampleRate, sourceInfo.channels, sourceInfo.duration);
 
     try {
       await saveLibraryTrack(track, audioBlob);
@@ -358,6 +365,9 @@ correctionButton.addEventListener('click', async () => {
   if (!correctionSourceBlob || !correctionSourceSampleRate || !correctionSourceChannels) return;
 
   correctionButton.disabled = true;
+  correctionIsRunning = true;
+  correctionCancelButton.disabled = false;
+  correctionCancelButton.classList.remove('hidden');
   correctionStatus.textContent = '処理中';
   correctionStatus.classList.remove('success', 'warning');
   correctionMessage.classList.remove('error');
@@ -365,11 +375,13 @@ correctionButton.addEventListener('click', async () => {
   correctionResult.classList.add('hidden');
 
   try {
-    const previewSeconds = Number(correctionDuration.value) || 30;
+    const previewSeconds = resolveCorrectionDuration(Number(correctionDuration.value), correctionSourceDuration);
     const result = await runCorrectionF0(correctionSourceBlob, {
       sampleRate: correctionSourceSampleRate,
       channels: correctionSourceChannels,
       previewSeconds,
+      sourceDuration: correctionSourceDuration,
+      onStage: (stage) => { correctionMessage.textContent = `${stage}… 長尺処理中はPWAを前面で開いたままにしてください。`; },
     });
 
     if (correctedUrl) URL.revokeObjectURL(correctedUrl);
@@ -402,7 +414,17 @@ correctionButton.addEventListener('click', async () => {
     correctionMessage.textContent = error instanceof Error ? error.message : '音量補正F0に失敗しました。';
     correctionMessage.classList.add('error');
   } finally {
+    correctionIsRunning = false;
     correctionButton.disabled = !correctionSourceBlob;
+    correctionCancelButton.classList.add('hidden');
+  }
+});
+
+correctionCancelButton.addEventListener('click', () => {
+  if (cancelCorrectionF0()) {
+    correctionCancelButton.disabled = true;
+    correctionStatus.textContent = '中断中';
+    correctionMessage.textContent = '処理の中断とメモリ解放を実行しています…';
   }
 });
 

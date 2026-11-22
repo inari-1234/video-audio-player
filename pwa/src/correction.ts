@@ -1,5 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { resolveCorrectionDuration } from './correction-options';
 import {
   F0_TARGET,
   buildMeasuredLoudnormFilter,
@@ -13,6 +14,8 @@ const REQUIRED_FILTERS = ['dynaudnorm', 'acompressor', 'loudnorm', 'aresample', 
 const MAX_F0_INPUT_BYTES = 80 * 1024 * 1024;
 
 const ffmpeg = new FFmpeg();
+let correctionRunning = false;
+let correctionCancelled = false;
 let loadPromise: Promise<void> | null = null;
 let logSink: string[] | null = null;
 
@@ -114,98 +117,126 @@ async function deleteIfExists(path: string) {
   }
 }
 
+// terminate() rejects pending operations and releases the WASM worker. The next run reloads it.
+export function cancelCorrectionF0(): boolean {
+  if (!correctionRunning || correctionCancelled) return false;
+  correctionCancelled = true;
+  ffmpeg.terminate();
+  loadPromise = null;
+  return true;
+}
+
+function assertNotCancelled(): void {
+  if (correctionCancelled) throw new Error('音量補正検証を中断しました。');
+}
+
 export async function runCorrectionF0(
   source: Blob,
-  options: { sampleRate: number; channels: number; previewSeconds?: number },
+  options: {
+    sampleRate: number;
+    channels: number;
+    previewSeconds?: number;
+    sourceDuration?: number;
+    onStage?: (stage: string) => void;
+  },
 ): Promise<CorrectionF0Result> {
+  if (correctionRunning) throw new Error('別の音量補正検証を実行中です。');
+  const previewSeconds = resolveCorrectionDuration(options.previewSeconds ?? 30, options.sourceDuration);
   if (source.size > MAX_F0_INPUT_BYTES) {
-    throw new Error('F0検証は入力80MB以下に制限しています。30〜60秒程度の音源で確認してください。');
+    throw new Error('メモリ保護のためF0の入力音源は80MB以下に制限しています。30分に設定してもこの制限は変わりません。');
   }
   if (options.channels !== 1 && options.channels !== 2) {
     throw new Error('F0検証はMono/Stereoのみ対象です。');
   }
-
+  correctionRunning = true;
+  correctionCancelled = false;
   const totalStarted = performance.now();
-  const engineLoadMs = await loadCorrectionEngine();
-  const probe = await probeRequiredFilters();
-  const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const inputName = `correction-${token}-input.m4a`;
-  const outputName = `correction-${token}-output.m4a`;
-  const previewSeconds = Math.max(5, Math.min(options.previewSeconds ?? 30, 60));
   const bitrate = options.channels === 1 ? 128_000 : 256_000;
+  let inputName: string | null = null;
+  let outputName: string | null = null;
+  const stage = (label: string) => { assertNotCancelled(); options.onStage?.(label); };
 
   try {
-    await ffmpeg.writeFile(inputName, await fetchFile(source));
+    stage('FFmpeg core読込');
+    const engineLoadMs = await loadCorrectionEngine();
+    assertNotCancelled();
+    stage('必要フィルター確認');
+    const probe = await probeRequiredFilters();
+    assertNotCancelled();
+    const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    inputName = `correction-${token}-input.m4a`;
+    outputName = `correction-${token}-output.m4a`;
 
+    stage('入力音源をメモリに読み込み');
+    const bytes = await fetchFile(source);
+    assertNotCancelled();
+    await ffmpeg.writeFile(inputName, bytes);
+    assertNotCancelled();
+
+    stage('原音ラウドネス測定（1/4）');
     const inputMeasureRun = await execCapture([
-      '-i', inputName,
-      '-t', String(previewSeconds),
-      '-vn',
-      '-af', measurementFilter(),
-      '-f', 'null', '-',
+      '-i', inputName, '-t', String(previewSeconds), '-vn',
+      '-af', measurementFilter(), '-f', 'null', '-',
     ]);
+    assertNotCancelled();
     const inputMeasure = parseLastLoudnormMeasurement(inputMeasureRun.text);
 
+    stage('前段処理後ラウドネス測定（2/4）');
     const prefilter = naturalPrefilter();
     const processedMeasureRun = await execCapture([
-      '-i', inputName,
-      '-t', String(previewSeconds),
-      '-vn',
-      '-af', `${prefilter},${measurementFilter()}`,
-      '-f', 'null', '-',
+      '-i', inputName, '-t', String(previewSeconds), '-vn',
+      '-af', `${prefilter},${measurementFilter()}`, '-f', 'null', '-',
     ]);
+    assertNotCancelled();
     const processedMeasure = parseLastLoudnormMeasurement(processedMeasureRun.text);
 
+    stage('2-pass正規化・AAC生成（3/4）');
     const secondPassLoudnorm = buildMeasuredLoudnormFilter(processedMeasure);
     const encodeRun = await execCapture([
-      '-i', inputName,
-      '-t', String(previewSeconds),
-      '-vn',
+      '-i', inputName, '-t', String(previewSeconds), '-vn',
       '-af', `${prefilter},${secondPassLoudnorm},aresample=${options.sampleRate},${limiterFilter(F0_TARGET.truePeak)}`,
-      '-c:a', 'aac',
-      '-b:a', String(bitrate),
-      '-ar', String(options.sampleRate),
-      '-ac', String(options.channels),
+      '-c:a', 'aac', '-b:a', String(bitrate),
+      '-ar', String(options.sampleRate), '-ac', String(options.channels),
       outputName,
     ]);
+    assertNotCancelled();
     const secondPass = parseLastLoudnormMeasurement(encodeRun.text);
 
+    stage('生成AACのTrue Peak再測定（4/4）');
     const verifyRun = await execCapture([
-      '-i', outputName,
-      '-vn',
-      '-af', measurementFilter(),
-      '-f', 'null', '-',
+      '-i', outputName, '-vn', '-af', measurementFilter(), '-f', 'null', '-',
     ]);
+    assertNotCancelled();
     const outputMeasure = parseLastLoudnormMeasurement(verifyRun.text);
 
+    stage('プレビュー音源を読み出し');
     const data = await ffmpeg.readFile(outputName);
+    assertNotCancelled();
     if (typeof data === 'string') throw new Error('補正版AACをバイナリとして取得できませんでした。');
     const output = new Blob([data.slice().buffer], { type: 'audio/mp4' });
 
     return {
-      output,
-      input: inputMeasure,
-      preNormalize: processedMeasure,
-      outputMeasure,
-      secondPass,
-      normalizationType: secondPass.normalizationType,
-      filters: probe.filters,
+      output, input: inputMeasure, preNormalize: processedMeasure, outputMeasure,
+      secondPass, normalizationType: secondPass.normalizationType, filters: probe.filters,
       timings: {
-        engineLoadMs,
-        filterProbeMs: probe.ms,
-        inputMeasureMs: inputMeasureRun.ms,
-        processedMeasureMs: processedMeasureRun.ms,
-        encodeMs: encodeRun.ms,
-        verifyMs: verifyRun.ms,
-        totalMs: performance.now() - totalStarted,
+        engineLoadMs, filterProbeMs: probe.ms, inputMeasureMs: inputMeasureRun.ms,
+        processedMeasureMs: processedMeasureRun.ms, encodeMs: encodeRun.ms,
+        verifyMs: verifyRun.ms, totalMs: performance.now() - totalStarted,
       },
-      sampleRate: options.sampleRate,
-      channels: options.channels,
-      bitrate,
-      previewSeconds,
+      sampleRate: options.sampleRate, channels: options.channels, bitrate, previewSeconds,
       gatePass: outputMeasure.inputTP <= F0_TARGET.truePeak + 0.05,
     };
+  } catch (error) {
+    if (correctionCancelled) throw new Error('音量補正検証を中断しました。原音とライブラリは変更されていません。');
+    throw error;
   } finally {
-    await Promise.all([deleteIfExists(inputName), deleteIfExists(outputName)]);
+    if (correctionCancelled) {
+      ffmpeg.terminate();
+      loadPromise = null;
+    } else if (inputName && outputName) {
+      await Promise.all([deleteIfExists(inputName), deleteIfExists(outputName)]);
+    }
+    correctionRunning = false;
+    correctionCancelled = false;
   }
 }
